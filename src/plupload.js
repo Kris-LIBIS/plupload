@@ -778,6 +778,9 @@ plupload.addFileFilter('prevent_empty', function(value, file, cb) {
 	@param {String} [settings.silverlight_xap_url] URL of the Silverlight xap.
 	@param {Boolean} [settings.send_chunk_number=true] Whether to send chunks and chunk numbers, or total and offset bytes.
 	@param {Boolean} [settings.send_file_name=true] Whether to send file name as additional argument - 'name' (required for chunked uploads and some other cases where file name cannot be sent via normal ways).
+	@param {Boolean} [settings.send_relative_path=false] Whether to send file relativePath as additional argument - 'relativePath' (required if you want to be able to upload a folder tree).
+	@param {Boolean} [settings.file_checksum=false] Whether to calculate and send the file MD5 checksum - 'fileChecksum'.
+	@param {Boolean} [settings.chunk_checksum=false] Whether to calculate and send each chunk checksum - 'chunkChecksum' (required if you want to be able to upload a folder tree).
 	@param {String} settings.url URL of the server-side upload handler.
 	@param {Boolean} [settings.unique_names=false] If true will generate unique filenames for uploaded files.
 
@@ -997,6 +1000,39 @@ plupload.Uploader = function(options) {
 		calc();
 	}
 
+	function calcChecksum(blob, size) {
+		return new Promise(function (resolve, reject) {
+			var partSize = size || 10485760; // 10MB
+			var partCount = Math.ceil(blob.size / partSize);
+			const spark = new SparkMD5.ArrayBuffer();
+			const fileReader = new FileReader();
+	
+			var partNr = 0;
+
+			fileReader.onload = function (e) {
+				spark.append(e.target.result);
+				partNr++;
+				if (partNr < partCount) {
+					nextPart();
+				} else {
+					resolve(spark.end());
+				}
+			};
+
+			fileReader.onerror = function (e) {
+				e.target.abort();
+				reject(e.target.error);
+			};
+
+			function nextPart() {
+				var start = partNr * partSize;
+				var end = Math.min(start + partSize, blob.size);
+				fileReader.readAsArrayBuffer(blob.slice(start, end).getSource());
+			}
+
+			nextPart();
+		});
+	}
 
 	function calc() {
 		var i, file;
@@ -1469,6 +1505,16 @@ plupload.Uploader = function(options) {
 				args.name = file.target_name || file.name;
 			}
 
+			// send additional 'relativePath' parameter only if required
+			if (up.settings.send_relative_path) {
+				args.relativePath = file.relativePath;
+			}
+
+			// send file checksum if needed
+			if (up.settings.file_checksum) {
+				args.fileChecksum = file.checksum;
+			}
+
 			if (chunkSize && features.chunks && blob.size > chunkSize) { // blob will be of type string if it was loaded in memory
 				curChunkSize = Math.min(chunkSize, blob.size - offset);
 				chunkBlob = blob.slice(offset, offset + curChunkSize);
@@ -1490,7 +1536,17 @@ plupload.Uploader = function(options) {
 			}
 
 			if (up.trigger('BeforeChunkUpload', file, args, chunkBlob, offset)) {
-				uploadChunk(args, chunkBlob, curChunkSize);
+				if (up.settings.chunk_checksum) {
+					calcChecksum(chunkBlob, up.settings.chunk_size).then(function (checksum) {
+						args.chunkChecksum = checksum;
+						uploadChunk(args, chunkBlob, curChunkSize);
+					}).catch(function (error) {
+						console.log(error);
+						handleError();
+					});
+				} else {
+					uploadChunk(args, chunkBlob, curChunkSize);
+				}
 			}
 		}
 
@@ -1616,16 +1672,32 @@ plupload.Uploader = function(options) {
 
 		blob = file.getSource();
 
-		// Start uploading chunks
-		if (!plupload.isEmptyObj(up.settings.resize) && plupload.inArray(blob.type, ['image/jpeg', 'image/png']) !== -1) {
-			// Resize if required
-			resizeImage(blob, up.settings.resize, runtimeOptions, function(resizedBlob) {
-				blob = resizedBlob;
-				file.size = resizedBlob.size;
-				uploadNextChunk();
-			});
+		// Calculate file checksum if needed
+		if (up.settings.file_checksum && typeof file.checksum === "undefined") {
+			calcChecksum(blob, up.settings.chunk_size)
+				.then(function (checksum) {
+					file.checksum = checksum;
+					startUpload();
+				}).catch(function (error) {
+					console.log(error);
+					handleError();
+				});
 		} else {
-			uploadNextChunk();
+			startUpload();
+		}
+
+		// Start uploading chunks
+		function startUpload() {
+			if (!plupload.isEmptyObj(up.settings.resize) && plupload.inArray(blob.type, ['image/jpeg', 'image/png']) !== -1) {
+				// Resize if required
+				resizeImage(blob, up.settings.resize, runtimeOptions, function(resizedBlob) {
+					blob = resizedBlob;
+					file.size = resizedBlob.size;
+					uploadNextChunk();
+				});
+			} else {
+				uploadNextChunk();
+			}
 		}
 	}
 
@@ -1739,6 +1811,7 @@ plupload.Uploader = function(options) {
 		resize: false,
 		runtimes: Runtime.order,
 		send_file_name: true,
+		send_relative_path: true,
 		send_chunk_number: true,
 		silverlight_xap_url: 'js/Moxie.xap'
 	};
@@ -2283,7 +2356,7 @@ plupload.File = (function() {
 			 * @type String
 			 * @default ''
 			 */
-			relativePath: file.relativePath || '',
+			relativePath: file.relativePath.replace(/^\.*\/+/, '') || file.name,
 
 			/**
 			 * File size in bytes (may change after client-side manupilation).

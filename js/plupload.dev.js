@@ -1,6 +1,6 @@
 /**
  * Plupload - multi-runtime File Uploader
- * v2.3.6
+ * v2.3.6.x
  *
  * Copyright 2013, Moxiecode Systems AB
  * Released under GPL License.
@@ -8,7 +8,7 @@
  * License: http://www.plupload.com/license
  * Contributing: http://www.plupload.com/contributing
  *
- * Date: 2017-11-03
+ * Date: 2020-04-02
  */
 ;(function (global, factory) {
 	var extract = function() {
@@ -88,8 +88,8 @@ function normalizeCaps(settings) {
 		}
 
 		if (settings.http_method) {
-            caps.use_http_method = settings.http_method;
-        }
+			caps.use_http_method = settings.http_method;
+		}
 
 		plupload.each(settings, function(value, feature) {
 			resolve(feature, !!value, true); // strict check
@@ -112,7 +112,7 @@ var plupload = {
 	 * @static
 	 * @final
 	 */
-	VERSION : '2.3.6',
+	VERSION : '2.3.6.x',
 
 	/**
 	 * The state of the queue before it has started and after it has finished
@@ -805,6 +805,9 @@ plupload.addFileFilter('prevent_empty', function(value, file, cb) {
 	@param {String} [settings.silverlight_xap_url] URL of the Silverlight xap.
 	@param {Boolean} [settings.send_chunk_number=true] Whether to send chunks and chunk numbers, or total and offset bytes.
 	@param {Boolean} [settings.send_file_name=true] Whether to send file name as additional argument - 'name' (required for chunked uploads and some other cases where file name cannot be sent via normal ways).
+	@param {Boolean} [settings.send_relative_path=false] Whether to send file relativePath as additional argument - 'relativePath' (required if you want to be able to upload a folder tree).
+	@param {Boolean} [settings.file_checksum=false] Whether to calculate and send the file MD5 checksum - 'fileChecksum'.
+	@param {Boolean} [settings.chunk_checksum=false] Whether to calculate and send each chunk checksum - 'chunkChecksum' (required if you want to be able to upload a folder tree).
 	@param {String} settings.url URL of the server-side upload handler.
 	@param {Boolean} [settings.unique_names=false] If true will generate unique filenames for uploaded files.
 
@@ -815,14 +818,14 @@ plupload.Uploader = function(options) {
 
 	@event Init
 	@param {plupload.Uploader} uploader Uploader instance sending the event.
-	 */
+		*/
 
 	/**
 	Fires after the init event incase you need to perform actions there.
 
 	@event PostInit
 	@param {plupload.Uploader} uploader Uploader instance sending the event.
-	 */
+		*/
 
 	/**
 	Fires when the option is changed in via uploader.setOption().
@@ -833,21 +836,21 @@ plupload.Uploader = function(options) {
 	@param {String} name Name of the option that was changed
 	@param {Mixed} value New value for the specified option
 	@param {Mixed} oldValue Previous value of the option
-	 */
+		*/
 
 	/**
 	Fires when the silverlight/flash or other shim needs to move.
 
 	@event Refresh
 	@param {plupload.Uploader} uploader Uploader instance sending the event.
-	 */
+		*/
 
 	/**
 	Fires when the overall state is being changed for the upload queue.
 
 	@event StateChanged
 	@param {plupload.Uploader} uploader Uploader instance sending the event.
-	 */
+		*/
 
 	/**
 	Fires when browse_button is clicked and browse dialog shows.
@@ -855,7 +858,7 @@ plupload.Uploader = function(options) {
 	@event Browse
 	@since 2.1.2
 	@param {plupload.Uploader} uploader Uploader instance sending the event.
-	 */
+		*/
 
 	/**
 	Fires for every filtered file before it is added to the queue.
@@ -864,14 +867,14 @@ plupload.Uploader = function(options) {
 	@since 2.1
 	@param {plupload.Uploader} uploader Uploader instance sending the event.
 	@param {plupload.File} file Another file that has to be added to the queue.
-	 */
+		*/
 
 	/**
 	Fires when the file queue is changed. In other words when files are added/removed to the files array of the uploader instance.
 
 	@event QueueChanged
 	@param {plupload.Uploader} uploader Uploader instance sending the event.
-	 */
+		*/
 
 	/**
 	Fires after files were filtered and added to the queue.
@@ -879,7 +882,7 @@ plupload.Uploader = function(options) {
 	@event FilesAdded
 	@param {plupload.Uploader} uploader Uploader instance sending the event.
 	@param {Array} files Array of file objects that were added to queue by the user.
-	 */
+		*/
 
 	/**
 	Fires when file is removed from the queue.
@@ -887,7 +890,7 @@ plupload.Uploader = function(options) {
 	@event FilesRemoved
 	@param {plupload.Uploader} uploader Uploader instance sending the event.
 	@param {Array} files Array of files that got removed.
-	 */
+		*/
 
 	/**
 	Fires just before a file is uploaded. Can be used to cancel the upload for the specified file
@@ -896,7 +899,7 @@ plupload.Uploader = function(options) {
 	@event BeforeUpload
 	@param {plupload.Uploader} uploader Uploader instance sending the event.
 	@param {plupload.File} file File to be uploaded.
-	 */
+		*/
 
 	/**
 	Fires when a file is to be uploaded by the runtime.
@@ -904,7 +907,7 @@ plupload.Uploader = function(options) {
 	@event UploadFile
 	@param {plupload.Uploader} uploader Uploader instance sending the event.
 	@param {plupload.File} file File to be uploaded.
-	 */
+		*/
 
 	/**
 	Fires while a file is being uploaded. Use this event to update the current file upload progress.
@@ -912,7 +915,7 @@ plupload.Uploader = function(options) {
 	@event UploadProgress
 	@param {plupload.Uploader} uploader Uploader instance sending the event.
 	@param {plupload.File} file File that is currently being uploaded.
-	 */
+		*/
 
 	/**
 	* Fires just before a chunk is uploaded. This event enables you to override settings
@@ -938,7 +941,7 @@ plupload.Uploader = function(options) {
 		@param {String} result.response The response body sent by the server.
 		@param {Number} result.status The HTTP status code sent by the server.
 		@param {String} result.responseHeaders All the response headers as a single string.
-	 */
+		*/
 
 	/**
 	Fires when a file is successfully uploaded.
@@ -950,7 +953,7 @@ plupload.Uploader = function(options) {
 		@param {String} result.response The response body sent by the server.
 		@param {Number} result.status The HTTP status code sent by the server.
 		@param {String} result.responseHeaders All the response headers as a single string.
-	 */
+		*/
 
 	/**
 	Fires when all files in a queue are uploaded.
@@ -958,7 +961,7 @@ plupload.Uploader = function(options) {
 	@event UploadComplete
 	@param {plupload.Uploader} uploader Uploader instance sending the event.
 	@param {Array} files Array of file objects that was added to queue/selected by the user.
-	 */
+		*/
 
 	/**
 	Fires when a error occurs.
@@ -968,14 +971,14 @@ plupload.Uploader = function(options) {
 	@param {Object} error Contains code, message and sometimes file and other details.
 		@param {Number} error.code The plupload error code.
 		@param {String} error.message Description of the error (uses i18n).
-	 */
+		*/
 
 	/**
 	Fires when destroy method is called.
 
 	@event Destroy
 	@param {plupload.Uploader} uploader Uploader instance sending the event.
-	 */
+		*/
 	var uid = plupload.guid()
 	, settings
 	, files = []
@@ -1024,6 +1027,39 @@ plupload.Uploader = function(options) {
 		calc();
 	}
 
+	function calcChecksum(blob, size) {
+		return new Promise(function (resolve, reject) {
+			var partSize = size || 10485760; // 10MB
+			var partCount = Math.ceil(blob.size / partSize);
+			const spark = new SparkMD5.ArrayBuffer();
+			const fileReader = new FileReader();
+	
+			var partNr = 0;
+
+			fileReader.onload = function (e) {
+				spark.append(e.target.result);
+				partNr++;
+				if (partNr < partCount) {
+					nextPart();
+				} else {
+					resolve(spark.end());
+				}
+			};
+
+			fileReader.onerror = function (e) {
+				e.target.abort();
+				reject(e.target.error);
+			};
+
+			function nextPart() {
+				var start = partNr * partSize;
+				var end = Math.min(start + partSize, blob.size);
+				fileReader.readAsArrayBuffer(blob.slice(start, end).getSource());
+			}
+
+			nextPart();
+		});
+	}
 
 	function calc() {
 		var i, file;
@@ -1496,6 +1532,16 @@ plupload.Uploader = function(options) {
 				args.name = file.target_name || file.name;
 			}
 
+			// send additional 'relativePath' parameter only if required
+			if (up.settings.send_relative_path) {
+				args.relativePath = file.relativePath;
+			}
+
+			// send file checksum if needed
+			if (up.settings.file_checksum) {
+				args.fileChecksum = file.checksum;
+			}
+
 			if (chunkSize && features.chunks && blob.size > chunkSize) { // blob will be of type string if it was loaded in memory
 				curChunkSize = Math.min(chunkSize, blob.size - offset);
 				chunkBlob = blob.slice(offset, offset + curChunkSize);
@@ -1517,7 +1563,18 @@ plupload.Uploader = function(options) {
 			}
 
 			if (up.trigger('BeforeChunkUpload', file, args, chunkBlob, offset)) {
-				uploadChunk(args, chunkBlob, curChunkSize);
+				if (up.settings.chunk_checksum) {
+					calcChecksum(chunkBlob, up.settings.chunk_size)
+						.then(function (checksum) {
+							args.chunkChecksum = checksum;
+							uploadChunk(args, chunkBlob, curChunkSize);
+						}).catch(function (error) {
+							console.log(error);
+							handleError();
+						});
+				} else {
+					uploadChunk(args, chunkBlob, curChunkSize);
+				}
 			}
 		}
 
@@ -1643,16 +1700,31 @@ plupload.Uploader = function(options) {
 
 		blob = file.getSource();
 
-		// Start uploading chunks
-		if (!plupload.isEmptyObj(up.settings.resize) && plupload.inArray(blob.type, ['image/jpeg', 'image/png']) !== -1) {
-			// Resize if required
-			resizeImage(blob, up.settings.resize, runtimeOptions, function(resizedBlob) {
-				blob = resizedBlob;
-				file.size = resizedBlob.size;
-				uploadNextChunk();
+		// Calculate file checksum if needed
+		if (up.settings.file_checksum && typeof file.checksum === "undefined") {
+			calcChecksum(blob, up.settings.chunk_size).then(function (checksum) {
+				file.checksum = checksum;
+				startUpload();
+			}).catch(function (error) {
+				console.log(error);
+				handleError();
 			});
 		} else {
-			uploadNextChunk();
+			startUpload();
+		}
+
+		// Start uploading chunks
+		function startUpload() {
+			if (!plupload.isEmptyObj(up.settings.resize) && plupload.inArray(blob.type, ['image/jpeg', 'image/png']) !== -1) {
+				// Resize if required
+				resizeImage(blob, up.settings.resize, runtimeOptions, function(resizedBlob) {
+					blob = resizedBlob;
+					file.size = resizedBlob.size;
+					uploadNextChunk();
+				});
+			} else {
+				uploadNextChunk();
+			}
 		}
 	}
 
@@ -1766,6 +1838,7 @@ plupload.Uploader = function(options) {
 		resize: false,
 		runtimes: Runtime.order,
 		send_file_name: true,
+		send_relative_path: true,
 		send_chunk_number: true,
 		silverlight_xap_url: 'js/Moxie.xap'
 	};
@@ -2310,7 +2383,7 @@ plupload.File = (function() {
 			 * @type String
 			 * @default ''
 			 */
-			relativePath: file.relativePath || '',
+			relativePath: file.relativePath.replace(/^\.*\/+/, '') || file.name,
 
 			/**
 			 * File size in bytes (may change after client-side manupilation).
@@ -2421,7 +2494,7 @@ plupload.File = (function() {
  * @class QueueProgress
  * @constructor
  */
- plupload.QueueProgress = function() {
+	plupload.QueueProgress = function() {
 	var self = this; // Setup alias for self to reduce code size when it's compressed
 
 	/**

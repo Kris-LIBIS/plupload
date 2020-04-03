@@ -15,6 +15,7 @@ jscoverage
 *.log
 .DS_Store
 _notes
+package-lock.json
 node_modules/
 .idea/
 sftp-config.json

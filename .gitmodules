@@ -3,4 +3,7 @@
 	url = https://github.com/moxiecode/moxie.git
 [submodule "tests/js/testrunner"]
 	path = tests/js/testrunner
-	url = https://github.com/moxiecode/testrunner.git
+  url = https://github.com/moxiecode/testrunner.git
+[submodule "src/spark-md5"]
+	path = src/spark-md5
+	url = https://github.com/satazor/js-spark-md5.git

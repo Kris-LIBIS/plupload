@@ -15,13 +15,19 @@
         "Silverlight",
         "moxie"
     ],
-    "version": "2.3.6",
-    "releaseDate": "2017-11-03",
+    "version": "2.3.6.x",
+    "releaseDate": "2020-04-02",
     "author": "Ephox",
-    "contributors": [{
-        "name": "Davit Barbakadze",
-        "email": "davit.barbakadze@ephox.com"
-    }],
+    "contributors": [
+        {
+            "name": "Davit Barbakadze",
+            "email": "davit.barbakadze@ephox.com"
+        },
+        {
+            "name": "Kris Dekeyser",
+            "email": "kris.dkeyser@Libis.be"
+        }
+    ],
     "main": "./js/plupload.full.min",
     "homepage": "http://plupload.com",
     "repository": {
@@ -31,34 +37,31 @@
     "bugs": {
         "url": "https://github.com/moxiecode/plupload/issues"
     },
-    "licenses": [{
-        "type": "AGPLv3",
-        "url": "https://github.com/moxiecode/plupload/blob/master/license.txt"
-    }, {
-        "type": "Single Website",
-        "url": "http://plupload.com/license/plupload_commercial_single.txt"
-    }, {
-        "type": "OEM",
-        "url": "http://plupload.com/license/plupload_commercial_oem.txt"
-    }, {
-        "type": "Custom Licensing",
-        "url": "http://www.moxiecode.com/contact.php"
-    }],
+    "licenses": [
+        {
+            "type": "AGPLv3",
+            "url": "https://github.com/moxiecode/plupload/blob/master/license.txt"
+        },
+        {
+            "type": "Single Website",
+            "url": "http://plupload.com/license/plupload_commercial_single.txt"
+        },
+        {
+            "type": "OEM",
+            "url": "http://plupload.com/license/plupload_commercial_oem.txt"
+        },
+        {
+            "type": "Custom Licensing",
+            "url": "http://www.moxiecode.com/contact.php"
+        }
+    ],
     "engines": {
         "node": ">=0.8.0"
     },
     "devDependencies": {
-        "jake": "0.5.x",
-        "glob": "3.2.x",
-        "jshint": "2.1.x",
-        "yuidocjs": "0.3.x",
-        "handlebars": "1.0.x",
-        "moxie-zip": "0.0.x",
-        "fileset": "0.1.x",
-        "coverjs": "0.0.x",
-        "bunyip": "https://github.com/jayarjo/bunyip/tarball/master",
-        "dateformat": "1.x",
-        "request": "2.25.x",
-        "async": "0.2.x"
+        "uglify-js": "~3.8.1"
+    },
+    "scripts": {
+        "minify": "uglifyjs src/spark-md5/spark-md5.js src/moxie/bin/js/moxie.js js/plupload.dev.js > js/plupload.full.js"
     }
 }
